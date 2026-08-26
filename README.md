@@ -81,6 +81,62 @@ El agente registra en `rendimiento`:
 
 Estas metricas se incluyen tambien en el mensaje final de asistencia para que puedan observarse desde el juego.
 
+## Pruebas unitarias de la funcion sucesor
+
+Las pruebas de la fase 5 estan en `test_agente_mapu.py` y utilizan `unittest`, una biblioteca incluida en Python. Por lo tanto, no es necesario instalar otra dependencia para ejecutarlas.
+
+### Como ejecutar las pruebas
+
+Abre una terminal en la raiz del proyecto, es decir, en la carpeta que contiene `AgenteMapu.py`, y ejecuta:
+
+```powershell
+python -m unittest -v test_agente_mapu.py
+```
+
+La opcion `-v` muestra el nombre y el resultado de cada prueba. Para ejecutar todas las pruebas Python que sigan el patron habitual tambien se puede usar:
+
+```powershell
+python -m unittest discover -v
+```
+
+### Que devuelve `pasa_aa()`
+
+La funcion recibe un estado con la forma `[aldeanos_izquierda, verdugos_izquierda, bote_izquierda]`. Devuelve una lista de tuplas con esta forma:
+
+```text
+(aldeanos_movidos, verdugos_movidos, nuevo_estado)
+```
+
+Las pruebas convierten `nuevo_estado` en una tupla unicamente para poder comparar conjuntos de resultados. La implementacion sigue devolviendo listas, como espera el agente.
+
+### Que verifica cada prueba
+
+- `test_genera_todos_los_sucesores_validos_del_estado_inicial`: comprueba que desde `[3, 3, 1]` se generen exactamente los tres movimientos validos. Esto evita que falten alternativas o se acepten movimientos imposibles.
+- `test_genera_movimientos_desde_la_orilla_derecha`: comprueba el caso contrario, cuando el bote esta en la derecha. Asi se verifica que el calculo de personajes disponibles y el sentido del viaje funcionen en ambas orillas.
+- `test_los_sucesores_son_estados_validos`: pasa varios estados al agente y confirma que cada sucesor respete la regla de los aldeanos y verdugos.
+- `test_el_bote_cambia_de_orilla_y_transporta_uno_o_dos_personajes`: verifica dos reglas mecanicas: el bote siempre cambia de orilla y nunca transporta cero ni mas de dos personajes.
+- `test_no_modifica_el_estado_recibido`: conserva una copia del estado original y comprueba que `pasa_aa()` no lo altere mientras genera los sucesores.
+
+Las pruebas combinan comparaciones exactas, aserciones booleanas, comprobacion de valores permitidos y subpruebas por estado. Esto permite detectar tanto resultados faltantes o sobrantes como errores en las restricciones o efectos secundarios.
+
+### Como interpretar los resultados
+
+Una ejecucion correcta termina con una salida similar a:
+
+```text
+Ran 5 tests in 0.001s
+
+OK
+```
+
+`OK` significa que las cinco pruebas pasaron y que la funcion sucesor cumple los casos cubiertos. Cada linea terminada en `ok` confirma una prueba individual.
+
+Si aparece `FAIL`, una asercion no coincide con el resultado esperado. El informe muestra el nombre de la prueba y los elementos que faltan o sobran; normalmente indica un error en la generacion de sucesores, en la validacion de estados o en el sentido del bote.
+
+Si aparece `ERROR`, la prueba no pudo ejecutarse por una excepcion, por ejemplo un import incorrecto o un error de estructura en el codigo. En ese caso se debe revisar el traceback mostrado antes del resumen.
+
+Estas pruebas validan directamente `pasa_aa()` y no reemplazan la prueba manual del juego grafico ni la medicion de la busqueda en amplitud. Su objetivo es detectar rapidamente regresiones en la funcion sucesor antes de ejecutar la aplicacion completa.
+
 ## Cambios visibles en el juego
 
 No se modificaron `Rio.py` ni los demas archivos base. Al pulsar el boton de asistencia de la interfaz:
