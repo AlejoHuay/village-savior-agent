@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Entornos virtuales
+.venv/
+venv/
+env/
+ENV/
+
+# Archivos de empaquetado y pruebas
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.coverage
+
+# Configuracion de IDEs
+.idea/
+.vs/
+.vscode/
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Logs y variables de entorno
+*.log
+.env
+
+# Material del agente
+/material/
