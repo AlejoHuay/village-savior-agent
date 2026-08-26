@@ -179,16 +179,18 @@ Las mejoras creativas se implementaron unicamente dentro de `AgenteMapu.py`, sin
 - Comunica el tiempo, el espacio maximo de la frontera y los nodos explorados como parte del resumen de asistencia.
 - Usa el mismo texto para la salida de la terminal y para la lectura por voz, de modo que la mejora sea accesible durante la partida.
 
-Estas funcionalidades se activan al pulsar el boton de asistencia. Mejoran la experiencia sin alterar la interfaz grafica existente ni la logica de movimiento manual del jugador.
+Estas funcionalidades se activan al pulsar el boton de asistencia. Mejoran la experiencia sin alterar la logica de movimiento manual del jugador.
 
 ## Cambios visibles en el juego
 
-No se modificaron `Rio.py` ni los demas archivos base. Al pulsar el boton de asistencia de la interfaz:
+La integracion se realiza en `Rio.py`, mientras que la logica del agente permanece en `AgenteMapu.py`. Al pulsar el boton de asistencia de la interfaz:
 
 - Se ejecuta el agente buscador.
 - Se muestran por consola las instrucciones generadas.
 - Pygame las entrega al motor de voz de Pyttsx4.
 - El jugador recibe la secuencia de movimientos y el resumen de rendimiento.
+- La reproduccion de voz se ejecuta en un hilo separado para que la ventana no deje de responder.
+- Se busca una voz española instalada mediante su identificador; si no existe, se usa la voz predeterminada.
 
 La interfaz, los personajes, las imagenes y los sonidos existentes se conservan sin cambios.
 

@@ -1,6 +1,7 @@
 from AgenteIA.Entorno import Entorno
 import pygame
 import pyttsx4
+import threading
 from Bote import Bote
 from Personaje import Personaje
 
@@ -10,9 +11,39 @@ class Rio(Entorno):
         Entorno.__init__(self)
         # incializar pygame
         pygame.init()
-        self.habla = pyttsx4.init()
-        self.habla.setProperty('voice', "spanish")
-        self.habla.setProperty('rate', 150)
+        self.hilo_voz = None
+
+    def hablar_instrucciones(self, instrucciones):
+        """Reproduce las instrucciones sin bloquear el bucle de Pygame."""
+        if self.hilo_voz and self.hilo_voz.is_alive():
+            return
+
+        def reproducir():
+            try:
+                habla = pyttsx4.init()
+                voces = habla.getProperty('voices')
+                voz_espanol = next(
+                    (
+                        voz for voz in voces
+                        if 'spanish' in voz.id.lower()
+                        or 'es_' in voz.id.lower()
+                        or 'es-' in voz.id.lower()
+                        or 'spanish' in getattr(voz, 'name', '').lower()
+                    ),
+                    None,
+                )
+                if voz_espanol:
+                    habla.setProperty('voice', voz_espanol.id)
+                habla.setProperty('rate', 150)
+                for instruccion in instrucciones:
+                    habla.say(instruccion)
+                habla.runAndWait()
+                habla.stop()
+            except Exception as error:
+                print(f"No se pudo reproducir la asistencia por voz: {error}")
+
+        self.hilo_voz = threading.Thread(target=reproducir, daemon=True)
+        self.hilo_voz.start()
 
     def get_percepciones(self, agente):
         agente.programa()
@@ -355,9 +386,8 @@ class Rio(Entorno):
             # ejecutamos las acciones del agente
             if con_agente:
                 for respuesta in agente.acciones:
-                    self.habla.say(respuesta)
                     print(respuesta)
-                self.habla.runAndWait()
+                self.hablar_instrucciones(list(agente.acciones))
                 con_agente = False
 
         pygame.quit()
