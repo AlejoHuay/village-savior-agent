@@ -79,7 +79,38 @@ El agente registra en `rendimiento`:
 - `profundidad`: numero de movimientos de la solucion.
 - `nodos_expandidos`: cantidad de estados examinados.
 
-Estas metricas se incluyen tambien en el mensaje final de asistencia para que puedan observarse desde el juego.
+Estas metricas se incluyen tambien en el mensaje final de asistencia. Se imprimen en la terminal y Pyttsx4 las lee mediante voz; la ventana grafica muestra el estado del juego, pero no contiene un panel visual separado para estas metricas.
+
+### Como presentar los resultados de rendimiento
+
+Para obtener los resultados desde la terminal, ejecuta el juego desde la raiz del proyecto:
+
+```powershell
+python main.py
+```
+
+Con el juego abierto, pulsa el boton de asistencia. El agente calculara la solucion y `Rio.py` imprimira las instrucciones y el resumen final en la terminal. La salida incluye un mensaje similar a:
+
+```text
+Rendimiento: 15 nodos explorados, frontera maxima de 3 estados y 0.000031 segundos.
+```
+
+Tambien se pueden consultar directamente todas las metricas sin abrir la ventana grafica:
+
+```powershell
+python -c "from AgenteMapu import AgenteMapu; a=AgenteMapu(); a.set_estado_inicial([3,3,1]); a.set_estado_meta([0,0,0]); a.programa(); print(a.rendimiento)"
+```
+
+Para el informe tecnico, organiza los valores en una tabla como esta:
+
+| Metrica | Resultado |
+|---|---:|
+| Tiempo | 0.000031 segundos |
+| Espacio maximo | 3 estados |
+| Profundidad | 11 movimientos |
+| Nodos expandidos | 15 |
+
+El tiempo puede cambiar ligeramente entre ejecuciones porque depende del equipo y del estado del sistema. Para un analisis mas confiable, ejecuta varias veces el agente y presenta el promedio del tiempo junto con los valores de profundidad, espacio y nodos.
 
 ## Pruebas unitarias de la funcion sucesor
 
@@ -136,6 +167,19 @@ Si aparece `FAIL`, una asercion no coincide con el resultado esperado. El inform
 Si aparece `ERROR`, la prueba no pudo ejecutarse por una excepcion, por ejemplo un import incorrecto o un error de estructura en el codigo. En ese caso se debe revisar el traceback mostrado antes del resumen.
 
 Estas pruebas validan directamente `pasa_aa()` y no reemplazan la prueba manual del juego grafico ni la medicion de la busqueda en amplitud. Su objetivo es detectar rapidamente regresiones en la funcion sucesor antes de ejecutar la aplicacion completa.
+
+## Mejoras creativas de la fase 3
+
+Las mejoras creativas se implementaron unicamente dentro de `AgenteMapu.py`, sin agregar archivos, imagenes ni modulos nuevos. Se eligio una mejora educativa porque el proyecto esta pensado para ayudar a comprender la planificacion y la busqueda:
+
+- El agente explica que utiliza busqueda en amplitud y que esta estrategia revisa primero las soluciones mas cortas.
+- Recuerda la regla principal: los verdugos no pueden superar a los aldeanos cuando hay aldeanos en la orilla.
+- Convierte cada transicion del camino en una instruccion numerada y comprensible, como `Paso 1: lleva 2 aldeanos a la derecha.`
+- Informa cuando la solucion fue completada y cuantos movimientos necesito.
+- Comunica el tiempo, el espacio maximo de la frontera y los nodos explorados como parte del resumen de asistencia.
+- Usa el mismo texto para la salida de la terminal y para la lectura por voz, de modo que la mejora sea accesible durante la partida.
+
+Estas funcionalidades se activan al pulsar el boton de asistencia. Mejoran la experiencia sin alterar la interfaz grafica existente ni la logica de movimiento manual del jugador.
 
 ## Cambios visibles en el juego
 
