@@ -74,12 +74,13 @@ Tambien informa que se utilizo busqueda en amplitud, recuerda la restriccion pri
 
 El agente registra en `rendimiento`:
 
-- `tiempo`: segundos empleados en encontrar la solucion.
-- `espacio_maximo`: mayor cantidad de caminos almacenados en la frontera.
-- `profundidad`: numero de movimientos de la solucion.
-- `nodos_expandidos`: cantidad de estados examinados.
+- `tiempo`: suma de los segundos empleados en todas las busquedas BFS.
+- `espacio_maximo`: mayor cantidad de caminos almacenados en la frontera entre todas las busquedas.
+- `nodos_expandidos`: suma de los estados examinados en todas las busquedas.
+- `movimientos`: cantidad de cruces completados por el jugador.
+- `profundidad`: profundidad de la busqueda mas reciente; se conserva como dato interno y no se muestra como metrica final.
 
-Estas metricas se incluyen tambien en el mensaje final de asistencia. Se imprimen en la terminal y Pyttsx4 las lee mediante voz; la ventana grafica muestra el estado del juego, pero no contiene un panel visual separado para estas metricas.
+Las metricas globales solo se incluyen en el mensaje final, cuando el jugador llega a `[0, 0, 0]`. Las metricas de cada busqueda parcial se conservan internamente para acumularlas, pero no se imprimen ni se leen durante los pasos. El resumen final se imprime en la terminal y Pyttsx4 lo lee mediante voz; la ventana grafica muestra el estado del juego, pero no contiene un panel visual separado para estas metricas.
 
 ### Como presentar los resultados de rendimiento
 
@@ -89,10 +90,11 @@ Para obtener los resultados desde la terminal, ejecuta el juego desde la raiz de
 python main.py
 ```
 
-Con el juego abierto, pulsa el boton de asistencia. El agente calculara la solucion y `Rio.py` imprimira las instrucciones y el resumen final en la terminal. La salida incluye un mensaje similar a:
+Con el juego abierto, pulsa el boton de asistencia. El agente calculara la primera solucion. Cada vez que completes un cruce, puede recalcular el siguiente tramo desde el estado actual, pero esas metricas parciales no se muestran. Al completar la partida, `Rio.py` imprimira el resumen global en la terminal. La salida tiene esta forma:
 
 ```text
-Rendimiento: 15 nodos explorados, frontera maxima de 3 estados y 0.000031 segundos.
+Solucion completada en 11 movimientos.
+Rendimiento global: 45 nodos explorados, frontera maxima de 3 estados y 0.000250 segundos.
 ```
 
 Tambien se pueden consultar directamente todas las metricas sin abrir la ventana grafica:
@@ -107,10 +109,10 @@ Para el informe tecnico, organiza los valores en una tabla como esta:
 |---|---:|
 | Tiempo | 0.000031 segundos |
 | Espacio maximo | 3 estados |
-| Profundidad | 11 movimientos |
-| Nodos expandidos | 15 |
+| Movimientos realizados | 11 |
+| Nodos expandidos acumulados | 45 |
 
-El tiempo puede cambiar ligeramente entre ejecuciones porque depende del equipo y del estado del sistema. Para un analisis mas confiable, ejecuta varias veces el agente y presenta el promedio del tiempo junto con los valores de profundidad, espacio y nodos.
+El tiempo y los nodos acumulados dependen de las decisiones del jugador: una ruta alternativa puede provocar busquedas parciales diferentes. Para un analisis mas confiable, ejecuta varias partidas y presenta el promedio del tiempo junto con los movimientos, el espacio maximo y los nodos acumulados.
 
 ## Pruebas unitarias de la funcion sucesor
 
@@ -180,6 +182,45 @@ Las mejoras creativas se implementaron unicamente dentro de `AgenteMapu.py`, sin
 - Usa el mismo texto para la salida de la terminal y para la lectura por voz, de modo que la mejora sea accesible durante la partida.
 
 Estas funcionalidades se activan al pulsar el boton de asistencia. Mejoran la experiencia sin alterar la logica de movimiento manual del jugador.
+
+## Actualizaciones recientes
+
+Las siguientes funcionalidades, mejoras y correcciones se agregaron despues de la implementacion inicial del agente:
+
+### Asistencia interactiva
+
+- La asistencia comienza leyendo las dos explicaciones generales sobre busqueda en amplitud y las restricciones del problema.
+- Despues muestra junto a la imagen del agente un cuadro de dialogo con una sola instruccion vigente.
+- Los pasos del dialogo no llevan numeracion para que puedan cambiar sin confundir al jugador.
+- El siguiente dialogo aparece unicamente cuando el jugador completa un cruce y el estado del juego cambia.
+- Si el jugador toma otra alternativa valida, el agente ejecuta una nueva busqueda en amplitud desde ese estado y muestra la siguiente instruccion valida.
+- Al alcanzar el estado meta, desaparece el dialogo de pasos y se leen solamente las dos lineas finales con el resultado y las metricas globales.
+
+### Correcciones de interfaz y audio
+
+- La voz se reproduce en un hilo separado, por lo que `runAndWait()` ya no bloquea la ventana de Pygame.
+- El boton `AGENTE` se procesa mediante un evento unico `MOUSEBUTTONDOWN`; un solo clic no vuelve a ejecutar la asistencia varias veces.
+- Se evita iniciar varias locuciones simultaneas si el jugador pulsa el boton mientras una asistencia sigue reproduciendose.
+- Ya no se fuerza el identificador literal `spanish`, que no existe en todas las instalaciones. Se busca una voz española disponible y, si no se encuentra, se conserva la voz predeterminada.
+- El volumen de la musica y de los efectos del juego se fija al 70% de su nivel de referencia.
+- El volumen de la voz aumenta un 35% respecto a su valor actual, con un limite maximo del 100% permitido por el motor.
+
+### Metricas globales de la partida
+
+Las busquedas parciales necesarias para seguir las decisiones del jugador se conservan internamente. No se muestran sus resultados individuales. Al completar la partida se presenta un unico resumen global con:
+
+- Todos los cruces realizados por el jugador.
+- La suma del tiempo empleado por todas las busquedas BFS.
+- La suma de los nodos explorados en todas las busquedas.
+- El mayor tamaño de frontera alcanzado durante cualquier busqueda.
+
+Esto permite que una ruta alternativa se refleje correctamente en el resultado final, sin confundir las metricas de un tramo con las de la partida completa.
+
+### Pruebas y documentacion
+
+- `test_agente_mapu.py` contiene cinco pruebas unitarias para `pasa_aa()`.
+- `README.md` documenta la solucion, las pruebas, la asistencia interactiva, las correcciones de audio y la interpretacion de las metricas.
+- Los cambios de esta etapa se concentran en `AgenteMapu.py`, `Rio.py` y `README.md`; no se agregaron recursos graficos ni archivos de configuracion adicionales.
 
 ## Cambios visibles en el juego
 
