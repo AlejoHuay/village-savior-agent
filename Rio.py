@@ -155,6 +155,7 @@ class Rio(Entorno):
         asistencia_estado = None
         asistencia_pasos = []
         asistencia_indice = 0
+        asistencia_camino = []
         dialogo_asistencia = None
         voz_pendiente = None
 
@@ -244,6 +245,7 @@ class Rio(Entorno):
                         asistencia_pasos = agente.obtener_pasos_asistencia(estado)
                         asistencia_estado = list(estado)
                         asistencia_indice = 0
+                        asistencia_camino = [list(nodo) for nodo in agente._camino_actual]
                         asistencia_activa = True
                         con_agente = True
                         dialogo_asistencia = asistencia_pasos[0] if asistencia_pasos else None
@@ -449,9 +451,23 @@ class Rio(Entorno):
                         voz_pendiente = mensajes_finales
                     else:
                         self.hablar_instrucciones(mensajes_finales)
+                elif asistencia_indice + 1 < len(asistencia_camino) \
+                        and estado == asistencia_camino[asistencia_indice + 1]:
+                    asistencia_indice += 1
+                    if asistencia_indice + 1 < len(asistencia_camino):
+                        dialogo_asistencia = agente.obtener_instruccion(
+                            asistencia_camino[asistencia_indice],
+                            asistencia_camino[asistencia_indice + 1],
+                        )
+                        print(dialogo_asistencia)
+                        if self.hilo_voz and self.hilo_voz.is_alive():
+                            voz_pendiente = [dialogo_asistencia]
+                        else:
+                            self.hablar_instrucciones([dialogo_asistencia])
                 else:
                     asistencia_pasos = agente.obtener_pasos_asistencia(estado)
                     asistencia_indice = 0
+                    asistencia_camino = [list(nodo) for nodo in agente._camino_actual]
                     dialogo_asistencia = asistencia_pasos[0] if asistencia_pasos else None
                     if dialogo_asistencia:
                         print(dialogo_asistencia)
