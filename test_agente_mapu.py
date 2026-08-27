@@ -3,6 +3,19 @@ import unittest
 from AgenteMapu import AgenteMapu
 
 
+def obtener_rutas_validas(agente, estado, meta, camino=None):
+    camino = camino or [tuple(estado)]
+    if tuple(estado) == tuple(meta):
+        return [camino]
+
+    rutas = []
+    for _, _, sucesor in agente.pasa_aa(list(estado)):
+        siguiente = tuple(sucesor)
+        if siguiente not in camino:
+            rutas.extend(obtener_rutas_validas(agente, siguiente, meta, camino + [siguiente]))
+    return rutas
+
+
 class TestPasaAa(unittest.TestCase):
 
     def setUp(self):
@@ -67,6 +80,64 @@ class TestPasaAa(unittest.TestCase):
         self.agente.pasa_aa(estado)
 
         self.assertEqual(estado, copia)
+
+
+class TestEscenariosAsistencia(unittest.TestCase):
+
+    def setUp(self):
+        self.agente = AgenteMapu()
+        self.inicio = (3, 3, 1)
+        self.meta = (0, 0, 0)
+        self.rutas = obtener_rutas_validas(self.agente, self.inicio, self.meta)
+
+    def test_todas_las_soluciones_validas_pueden_recalcularse(self):
+        self.assertEqual(len(self.rutas), 4)
+
+        for ruta in self.rutas:
+            with self.subTest(ruta=ruta):
+                for estado in ruta[:-1]:
+                    pasos = self.agente.obtener_pasos_asistencia(list(estado))
+                    self.assertTrue(pasos)
+                    self.assertEqual(tuple(self.agente._camino_actual[0]), estado)
+                    self.assertEqual(tuple(self.agente._camino_actual[-1]), self.meta)
+                    self.assertTrue(
+                        all(self.agente.es_estado_valido(nodo) for nodo in self.agente._camino_actual)
+                    )
+
+    def test_varios_cambios_de_ruta_validos_acumulan_bfs(self):
+        estados_alternativos = [
+            self.rutas[1][1],
+            self.rutas[2][3],
+            self.rutas[3][5],
+        ]
+        self.agente.reiniciar_rendimiento_partida()
+        nodos_esperados = 0
+
+        for estado in [self.inicio] + estados_alternativos:
+            pasos = self.agente.obtener_pasos_asistencia(list(estado))
+            self.assertTrue(pasos)
+            nodos_esperados += self.agente.rendimiento_busqueda["nodos_expandidos"]
+            self.assertEqual(tuple(self.agente._camino_actual[0]), estado)
+            self.assertEqual(tuple(self.agente._camino_actual[-1]), self.meta)
+
+        self.assertEqual(self.agente.rendimiento["movimientos"], 0)
+        self.assertEqual(self.agente.rendimiento["nodos_expandidos"], nodos_esperados)
+        self.assertGreater(self.agente.rendimiento["tiempo"], 0)
+
+    def test_recalcular_despues_de_varias_decisiones_no_corrompe_el_agente(self):
+        estados = [list(self.inicio)]
+        for ruta in self.rutas:
+            estados.extend(list(estado) for estado in ruta[1:4])
+
+        self.agente.reiniciar_rendimiento_partida()
+        for estado in estados:
+            pasos = self.agente.obtener_pasos_asistencia(estado)
+            self.assertTrue(pasos)
+            self.assertTrue(self.agente.es_estado_valido(self.agente._camino_actual[0]))
+            self.assertEqual(tuple(self.agente._camino_actual[-1]), self.meta)
+
+        self.assertEqual(self.agente.rendimiento["movimientos"], 0)
+        self.assertGreater(self.agente.rendimiento["nodos_expandidos"], 15)
 
 
 if __name__ == "__main__":
