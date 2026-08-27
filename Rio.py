@@ -240,6 +240,7 @@ class Rio(Entorno):
                 # si se hace click en el boton nuevo
                 if agente_solicitado:
                     if not asistencia_activa:
+                        agente.reiniciar_rendimiento_partida()
                         asistencia_pasos = agente.obtener_pasos_asistencia(estado)
                         asistencia_estado = list(estado)
                         asistencia_indice = 0
@@ -296,6 +297,8 @@ class Rio(Entorno):
                         personajes[i].x_mas = 0
                     pos_bote = 1
                     num_movida += 1
+                    if asistencia_activa:
+                        agente.registrar_movimiento()
                     estado[0], estado[1], estado[2] = estado[0] - accion[0], estado[1] - accion[1], 0
                     for i in range(6):
                         if personajes[i].pos == 2:
@@ -313,6 +316,8 @@ class Rio(Entorno):
                         personajes[i].x_mas = 0
                     pos_bote = 0
                     num_movida += 1
+                    if asistencia_activa:
+                        agente.registrar_movimiento()
                     estado[0], estado[1], estado[2] = estado[0] + accion[0], estado[1] + accion[1], 1
                     for i in range(6):
                         if personajes[i].pos == 3:
@@ -437,7 +442,7 @@ class Rio(Entorno):
                 elif estado == [0, 0, 0]:
                     asistencia_activa = False
                     dialogo_asistencia = None
-                    mensajes_finales = agente.acciones[-2:]
+                    mensajes_finales = agente.obtener_mensaje_rendimiento_global()
                     for mensaje in mensajes_finales:
                         print(mensaje)
                     if self.hilo_voz and self.hilo_voz.is_alive():

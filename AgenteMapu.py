@@ -7,7 +7,29 @@ class AgenteMapu(AgenteBuscador):
     def __init__(self):
         AgenteBuscador.__init__(self)
         self.rendimiento = {}
+        self.rendimiento_busqueda = {}
         self.acciones = []
+        self.reiniciar_rendimiento_partida()
+
+    def reiniciar_rendimiento_partida(self):
+        self.rendimiento = {
+            "tiempo": 0.0,
+            "espacio_maximo": 0,
+            "profundidad": 0,
+            "nodos_expandidos": 0,
+            "movimientos": 0,
+        }
+
+    def registrar_movimiento(self):
+        self.rendimiento["movimientos"] += 1
+
+    def obtener_mensaje_rendimiento_global(self):
+        return (
+            f"Solucion completada en {self.rendimiento['movimientos']} movimientos.\n"
+            f"Rendimiento global: {self.rendimiento['nodos_expandidos']} nodos explorados, "
+            f"frontera maxima de {self.rendimiento['espacio_maximo']} estados y "
+            f"{self.rendimiento['tiempo']:.6f} segundos."
+        ).split("\n")
 
     def pasa_aa(self, e):
         """Genera los estados validos alcanzables desde e.
@@ -113,12 +135,17 @@ class AgenteMapu(AgenteBuscador):
             espacio_maximo = max(espacio_maximo, len(frontera))
 
         tiempo = time.perf_counter() - tiempo_inicio
-        self.rendimiento = {
+        self.rendimiento_busqueda = {
             "tiempo": tiempo,
             "espacio_maximo": espacio_maximo,
             "profundidad": len(camino) - 1 if camino else 0,
             "nodos_expandidos": nodos_expandidos,
         }
+        self.rendimiento["tiempo"] += tiempo
+        self.rendimiento["espacio_maximo"] = max(
+            self.rendimiento["espacio_maximo"], espacio_maximo
+        )
+        self.rendimiento["nodos_expandidos"] += nodos_expandidos
 
         if camino is None:
             self._camino_actual = []
@@ -136,12 +163,12 @@ class AgenteMapu(AgenteBuscador):
             for i in range(len(camino) - 1)
         )
         instrucciones.append(
-            f"Solucion completada en {self.rendimiento['profundidad']} movimientos."
+            f"Solucion parcial encontrada en {self.rendimiento_busqueda['profundidad']} movimientos."
         )
         instrucciones.append(
-            f"Rendimiento: {self.rendimiento['nodos_expandidos']} nodos explorados, "
-            f"frontera maxima de {self.rendimiento['espacio_maximo']} estados y "
-            f"{self.rendimiento['tiempo']:.6f} segundos."
+            f"Busqueda parcial: {self.rendimiento_busqueda['nodos_expandidos']} nodos explorados, "
+            f"frontera maxima de {self.rendimiento_busqueda['espacio_maximo']} estados y "
+            f"{self.rendimiento_busqueda['tiempo']:.6f} segundos."
         )
         self.acciones = instrucciones
         self.set_acciones(instrucciones)
