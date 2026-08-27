@@ -149,26 +149,29 @@ Las pruebas convierten `nuevo_estado` en una tupla unicamente para poder compara
 - `test_los_sucesores_son_estados_validos`: pasa varios estados al agente y confirma que cada sucesor respete la regla de los aldeanos y verdugos.
 - `test_el_bote_cambia_de_orilla_y_transporta_uno_o_dos_personajes`: verifica dos reglas mecanicas: el bote siempre cambia de orilla y nunca transporta cero ni mas de dos personajes.
 - `test_no_modifica_el_estado_recibido`: conserva una copia del estado original y comprueba que `pasa_aa()` no lo altere mientras genera los sucesores.
+- `test_todas_las_soluciones_validas_pueden_recalcularse`: recorre las cuatro soluciones validas conocidas y comprueba que se pueda recalcular desde sus estados intermedios hasta la meta.
+- `test_varios_cambios_de_ruta_validos_acumulan_bfs`: simula varios cambios de ruta validos y verifica que los nodos acumulados sean la suma de las busquedas realizadas.
+- `test_recalcular_despues_de_varias_decisiones_no_corrompe_el_agente`: ejecuta recalculos desde muchos estados de distintas rutas y comprueba que cada resultado siga siendo valido y llegue a `[0, 0, 0]`.
 
-Las pruebas combinan comparaciones exactas, aserciones booleanas, comprobacion de valores permitidos y subpruebas por estado. Esto permite detectar tanto resultados faltantes o sobrantes como errores en las restricciones o efectos secundarios.
+Las ocho pruebas combinan comparaciones exactas, aserciones booleanas, comprobacion de valores permitidos y subpruebas por estado. Esto permite detectar resultados faltantes o sobrantes, errores en las restricciones, cambios de orilla incorrectos, efectos secundarios y fallos al recalcular repetidamente.
 
 ### Como interpretar los resultados
 
 Una ejecucion correcta termina con una salida similar a:
 
 ```text
-Ran 5 tests in 0.001s
+Ran 8 tests in 0.007s
 
 OK
 ```
 
-`OK` significa que las cinco pruebas pasaron y que la funcion sucesor cumple los casos cubiertos. Cada linea terminada en `ok` confirma una prueba individual.
+`OK` significa que las ocho pruebas pasaron y que la funcion sucesor y sus recalculos cumplen los casos cubiertos. Cada linea terminada en `ok` confirma una prueba individual.
 
 Si aparece `FAIL`, una asercion no coincide con el resultado esperado. El informe muestra el nombre de la prueba y los elementos que faltan o sobran; normalmente indica un error en la generacion de sucesores, en la validacion de estados o en el sentido del bote.
 
 Si aparece `ERROR`, la prueba no pudo ejecutarse por una excepcion, por ejemplo un import incorrecto o un error de estructura en el codigo. En ese caso se debe revisar el traceback mostrado antes del resumen.
 
-Estas pruebas validan directamente `pasa_aa()` y no reemplazan la prueba manual del juego grafico ni la medicion de la busqueda en amplitud. Su objetivo es detectar rapidamente regresiones en la funcion sucesor antes de ejecutar la aplicacion completa.
+Estas pruebas validan directamente `pasa_aa()` y el recalculo del agente, pero no reemplazan la prueba manual del juego grafico ni la comprobacion de clics, animaciones y voz. Su objetivo es detectar rapidamente regresiones antes de ejecutar la aplicacion completa.
 
 ## Mejoras creativas de la fase 3
 
@@ -176,7 +179,7 @@ Las mejoras creativas se implementaron unicamente dentro de `AgenteMapu.py`, sin
 
 - El agente explica que utiliza busqueda en amplitud y que esta estrategia revisa primero las soluciones mas cortas.
 - Recuerda la regla principal: los verdugos no pueden superar a los aldeanos cuando hay aldeanos en la orilla.
-- Convierte cada transicion del camino en una instruccion numerada y comprensible, como `Paso 1: lleva 2 aldeanos a la derecha.`
+- Convierte cada transicion del camino en una instruccion comprensible. La salida general puede numerar los pasos, mientras que el cuadro de dialogo interactivo muestra solo la instruccion vigente, sin numero.
 - Informa cuando la solucion fue completada y cuantos movimientos necesito.
 - Comunica el tiempo, el espacio maximo de la frontera y los nodos explorados como parte del resumen de asistencia.
 - Usa el mismo texto para la salida de la terminal y para la lectura por voz, de modo que la mejora sea accesible durante la partida.
