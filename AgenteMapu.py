@@ -62,12 +62,27 @@ class AgenteMapu(AgenteBuscador):
             partes.append(f"{verdugos} verdugo" + ("s" if verdugos != 1 else ""))
         return " y ".join(partes)
 
-    def obtener_instruccion(self, estado, siguiente, numero_paso):
+    def obtener_instruccion(self, estado, siguiente, numero_paso=None):
         pacificos = abs(estado[0] - siguiente[0])
         verdugos = abs(estado[1] - siguiente[1])
         direccion = "derecha" if estado[2] == 1 else "izquierda"
         tripulacion = self.describir_tripulacion(pacificos, verdugos)
-        return f"Paso {numero_paso}: lleva {tripulacion} a la {direccion}."
+        instruccion = f"Lleva {tripulacion} a la {direccion}."
+        if numero_paso is not None:
+            instruccion = f"Paso {numero_paso}: {instruccion}"
+        return instruccion
+
+    def obtener_pasos_asistencia(self, estado):
+        """Calcula una nueva solucion y devuelve sus instrucciones de pasos."""
+        self.set_estado_inicial(list(estado))
+        self.set_estado_meta([0, 0, 0])
+        self.programa()
+        return [
+            self.obtener_instruccion(estado_actual, siguiente)
+            for estado_actual, siguiente in zip(
+                self._camino_actual[:-1], self._camino_actual[1:]
+            )
+        ]
 
 
     def programa(self):
@@ -106,10 +121,12 @@ class AgenteMapu(AgenteBuscador):
         }
 
         if camino is None:
+            self._camino_actual = []
             self.acciones = ["No encontre una solucion valida para este estado."]
             self.set_acciones(self.acciones)
             return
 
+        self._camino_actual = camino
         instrucciones = [
             "He utilizado busqueda en amplitud: primero reviso las soluciones mas cortas.",
             "Las reglas se respetan en las dos orillas: los verdugos nunca superan a los aldeanos cuando hay aldeanos.",

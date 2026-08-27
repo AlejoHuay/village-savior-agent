@@ -35,6 +35,8 @@ class Rio(Entorno):
                 if voz_espanol:
                     habla.setProperty('voice', voz_espanol.id)
                 habla.setProperty('rate', 150)
+                volumen = habla.getProperty('volume') or 1.0
+                habla.setProperty('volume', min(volumen * 1.35, 1.0))
                 for instruccion in instrucciones:
                     habla.say(instruccion)
                 habla.runAndWait()
@@ -44,6 +46,28 @@ class Rio(Entorno):
 
         self.hilo_voz = threading.Thread(target=reproducir, daemon=True)
         self.hilo_voz.start()
+
+    @staticmethod
+    def dibujar_dialogo(ventana, fuente, texto):
+        """Dibuja el texto de asistencia junto a la imagen del agente."""
+        rectangulo = pygame.Rect(200, 112, 510, 86)
+        pygame.draw.rect(ventana, (255, 255, 255), rectangulo, border_radius=8)
+        pygame.draw.rect(ventana, (35, 35, 35), rectangulo, 2, border_radius=8)
+        palabras = texto.split()
+        lineas = []
+        linea = ""
+        for palabra in palabras:
+            candidata = f"{linea} {palabra}".strip()
+            if fuente.size(candidata)[0] <= rectangulo.width - 24:
+                linea = candidata
+            else:
+                lineas.append(linea)
+                linea = palabra
+        if linea:
+            lineas.append(linea)
+        for indice, linea in enumerate(lineas[:3]):
+            superficie = fuente.render(linea, True, (20, 20, 20))
+            ventana.blit(superficie, (rectangulo.x + 12, rectangulo.y + 12 + indice * 22))
 
     def get_percepciones(self, agente):
         agente.programa()
@@ -79,8 +103,12 @@ class Rio(Entorno):
         # cargamos sonido
         snd_fin = pygame.mixer.Sound('sonido/sonido_fin.wav')
         snd_victoria = pygame.mixer.Sound('sonido/sonido_ganador.wav')
+        pygame.mixer.music.set_volume(0.7)
+        snd_fin.set_volume(0.7)
+        snd_victoria.set_volume(0.7)
 
         font = pygame.font.SysFont(None, 25)
+        font_dialogo = pygame.font.SysFont(None, 24)
 
         x = (ancho * 0.1)
         y = (altura * 0.8)
@@ -123,6 +151,12 @@ class Rio(Entorno):
         pygame.mixer.music.play(-1)
         sonido = True
         con_agente = False
+        asistencia_activa = False
+        asistencia_estado = None
+        asistencia_pasos = []
+        asistencia_indice = 0
+        dialogo_asistencia = None
+        voz_pendiente = None
 
         while not finalizado:
             agente_solicitado = False
@@ -163,6 +197,8 @@ class Rio(Entorno):
 
             if con_agente:
                 ventana.blit(agente_img, (200, 40))
+            if dialogo_asistencia:
+                self.dibujar_dialogo(ventana, font_dialogo, dialogo_asistencia)
 
             # capturamos las coordenadas del cursor del mouse
             cursor = pygame.mouse.get_pos()
@@ -203,14 +239,20 @@ class Rio(Entorno):
                 ventana.blit(agente_btn1_img, (700, 20))
                 # si se hace click en el boton nuevo
                 if agente_solicitado:
-                    # mostramos a nuestro agente
-                    ventana.blit(agente_img, (200, 40))
-                    # llamamos a percibir, aqui debemos capturar
-                    # el estado en el que se encuentra el problema
-                    # para que el programa agente resuelva el problema
-                    # dejando la respuesta en el atributo acciones.
-                    self.get_percepciones(agente)
-                    con_agente = True
+                    if not asistencia_activa:
+                        asistencia_pasos = agente.obtener_pasos_asistencia(estado)
+                        asistencia_estado = list(estado)
+                        asistencia_indice = 0
+                        asistencia_activa = True
+                        con_agente = True
+                        dialogo_asistencia = asistencia_pasos[0] if asistencia_pasos else None
+                        mensajes_iniciales = agente.acciones[:2]
+                        for mensaje in mensajes_iniciales:
+                            print(mensaje)
+                        self.hablar_instrucciones(mensajes_iniciales)
+                        if dialogo_asistencia:
+                            print(dialogo_asistencia)
+                            voz_pendiente = [dialogo_asistencia]
 
             # mostrar bote
             ventana.blit(bote_img, (int(x), int(y)))
@@ -387,12 +429,36 @@ class Rio(Entorno):
 
             pygame.display.update()
             clock.tick(25)
-            # ejecutamos las acciones del agente
-            if con_agente:
-                for respuesta in agente.acciones:
-                    print(respuesta)
-                self.hablar_instrucciones(list(agente.acciones))
-                con_agente = False
+            if asistencia_activa and asistencia_estado != estado:
+                asistencia_estado = list(estado)
+                if fin_juego:
+                    asistencia_activa = False
+                    dialogo_asistencia = None
+                elif estado == [0, 0, 0]:
+                    asistencia_activa = False
+                    dialogo_asistencia = None
+                    mensajes_finales = agente.acciones[-2:]
+                    for mensaje in mensajes_finales:
+                        print(mensaje)
+                    if self.hilo_voz and self.hilo_voz.is_alive():
+                        voz_pendiente = mensajes_finales
+                    else:
+                        self.hablar_instrucciones(mensajes_finales)
+                else:
+                    asistencia_pasos = agente.obtener_pasos_asistencia(estado)
+                    asistencia_indice = 0
+                    dialogo_asistencia = asistencia_pasos[0] if asistencia_pasos else None
+                    if dialogo_asistencia:
+                        print(dialogo_asistencia)
+                        if self.hilo_voz and self.hilo_voz.is_alive():
+                            voz_pendiente = [dialogo_asistencia]
+                        else:
+                            self.hablar_instrucciones([dialogo_asistencia])
+
+            if voz_pendiente and (not self.hilo_voz or not self.hilo_voz.is_alive()):
+                siguiente_voz = voz_pendiente
+                voz_pendiente = None
+                self.hablar_instrucciones(siguiente_voz)
 
         pygame.quit()
         quit()
