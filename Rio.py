@@ -125,6 +125,7 @@ class Rio(Entorno):
         con_agente = False
 
         while not finalizado:
+            agente_solicitado = False
             # cargar imagenes de inicio
             # imagen de fondo
             ventana.blit(fondo_img, (0, 0))
@@ -142,6 +143,9 @@ class Rio(Entorno):
                 # si apretamos x de la ventana, salimos del juego
                 if evento.type == pygame.QUIT:
                     finalizado = True
+                elif evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
+                    if pygame.Rect(700, 45, 119, 36).collidepoint(evento.pos):
+                        agente_solicitado = True
 
             # cargar imagenes para los personajes (el vector de personajes)
             for i in range(6):
@@ -198,7 +202,7 @@ class Rio(Entorno):
             if 700 + 119 > cursor[0] > 700 and 45 + 36 > cursor[1] > 45:
                 ventana.blit(agente_btn1_img, (700, 20))
                 # si se hace click en el boton nuevo
-                if pygame.mouse.get_pressed() == (1, 0, 0):
+                if agente_solicitado:
                     # mostramos a nuestro agente
                     ventana.blit(agente_img, (200, 40))
                     # llamamos a percibir, aqui debemos capturar

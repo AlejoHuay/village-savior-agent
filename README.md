@@ -191,6 +191,7 @@ La integracion se realiza en `Rio.py`, mientras que la logica del agente permane
 - El jugador recibe la secuencia de movimientos y el resumen de rendimiento.
 - La reproduccion de voz se ejecuta en un hilo separado para que la ventana no deje de responder.
 - Se busca una voz española instalada mediante su identificador; si no existe, se usa la voz predeterminada.
+- El boton `AGENTE` se procesa como un evento unico de clic, evitando imprimir o iniciar varias veces la misma asistencia mientras el boton permanece presionado.
 
 La interfaz, los personajes, las imagenes y los sonidos existentes se conservan sin cambios.
 
