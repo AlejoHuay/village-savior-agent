@@ -193,6 +193,7 @@ Las siguientes funcionalidades, mejoras y correcciones se agregaron despues de l
 - Despues muestra junto a la imagen del agente un cuadro de dialogo con una sola instruccion vigente.
 - Los pasos del dialogo no llevan numeracion para que puedan cambiar sin confundir al jugador.
 - El siguiente dialogo aparece unicamente cuando el jugador completa un cruce y el estado del juego cambia.
+- Si el jugador sigue el estado sugerido, el agente reutiliza el camino guardado y no ejecuta otra busqueda.
 - Si el jugador toma otra alternativa valida, el agente ejecuta una nueva busqueda en amplitud desde ese estado y muestra la siguiente instruccion valida.
 - Al alcanzar el estado meta, desaparece el dialogo de pasos y se leen solamente las dos lineas finales con el resultado y las metricas globales.
 
@@ -207,16 +208,14 @@ Las siguientes funcionalidades, mejoras y correcciones se agregaron despues de l
 
 ### Metricas globales de la partida
 
-Las busquedas parciales necesarias para seguir las decisiones del jugador se conservan internamente. No se muestran sus resultados individuales. Al completar la partida se presenta un unico resumen global con:
+La primera busqueda calcula y conserva el camino completo sugerido. Mientras el jugador siga ese camino, no se ejecutan nuevas BFS. Solo se realiza una busqueda parcial adicional cuando el jugador completa un cruce valido hacia un estado distinto al estado sugerido. No se muestran los resultados individuales de esas busquedas. Al completar la partida se presenta un unico resumen global con:
 
 - Todos los cruces realizados por el jugador.
-- La suma del tiempo empleado por todas las busquedas BFS.
-- La suma de los nodos explorados en todas las busquedas.
+- La suma del tiempo empleado por todas las busquedas BFS ejecutadas.
+- La suma de los nodos explorados en todas las busquedas ejecutadas.
 - El mayor tamaño de frontera alcanzado durante cualquier busqueda.
 
-Esto permite que una ruta alternativa se refleje correctamente en el resultado final, sin confundir las metricas de un tramo con las de la partida completa.
-
-### Pruebas y documentacion
+Esto permite que una ruta alternativa se refleje correctamente en el resultado final. Si el jugador sigue la primera solucion sin desviarse, las metricas globales corresponden a una sola BFS; si se desvía, se suman unicamente los nodos y el tiempo de las nuevas BFS ejecutadas.
 
 - `test_agente_mapu.py` contiene cinco pruebas unitarias para `pasa_aa()`.
 - `README.md` documenta la solucion, las pruebas, la asistencia interactiva, las correcciones de audio y la interpretacion de las metricas.
