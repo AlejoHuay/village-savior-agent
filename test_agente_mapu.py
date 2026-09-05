@@ -139,6 +139,34 @@ class TestEscenariosAsistencia(unittest.TestCase):
         self.assertEqual(self.agente.rendimiento["movimientos"], 0)
         self.assertGreater(self.agente.rendimiento["nodos_expandidos"], 15)
 
+    def test_busqueda_dfs_generates_valid_path(self):
+        self.agente.set_estado_inicial([3, 3, 1])
+        self.agente.set_estado_meta([0, 0, 0])
+
+        camino = self.agente.buscar_solucion(algoritmo="dfs")
+
+        self.assertIsNotNone(camino)
+        self.assertEqual(tuple(camino[0]), (3, 3, 1))
+        self.assertEqual(tuple(camino[-1]), (0, 0, 0))
+        self.assertTrue(all(self.agente.es_estado_valido(nodo) for nodo in camino))
+
+    def test_reporte_comparativo_con_bfs_y_dfs(self):
+        self.agente.set_estado_inicial([3, 3, 1])
+        self.agente.set_estado_meta([0, 0, 0])
+
+        bfs = self.agente.buscar_solucion(algoritmo="bfs")
+        dfs = self.agente.buscar_solucion(algoritmo="dfs")
+
+        self.assertIsNotNone(bfs)
+        self.assertIsNotNone(dfs)
+        self.assertEqual(tuple(bfs[-1]), (0, 0, 0))
+        self.assertEqual(tuple(dfs[-1]), (0, 0, 0))
+
+        reporte = self.agente.generar_reporte_metricas(bfs, dfs)
+        self.assertIn("BFS", reporte)
+        self.assertIn("DFS", reporte)
+        self.assertIn("longitud", reporte.lower())
+
 
 if __name__ == "__main__":
     unittest.main()

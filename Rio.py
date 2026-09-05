@@ -70,7 +70,7 @@ class Rio(Entorno):
             ventana.blit(superficie, (rectangulo.x + 12, rectangulo.y + 12 + indice * 22))
 
     def get_percepciones(self, agente):
-        agente.programa()
+        agente.set_percepciones([3, 3, 1])
 
     def ejecutar(self, agente):
         # definimos la ventana principal
@@ -91,8 +91,6 @@ class Rio(Entorno):
         verdugo1_img = pygame.image.load('imagenes/verdugo1.png')
         nuevo_img = pygame.image.load('imagenes/nuevo.png')
         nuevo1_img = pygame.image.load('imagenes/nuevo1.png')
-        agente_btn_img = pygame.image.load('imagenes/agente_btn.png')
-        agente_btn1_img = pygame.image.load('imagenes/agente_btn1.png')
         fin_img = pygame.image.load('imagenes/fin.png')
         victoria_img = pygame.image.load('imagenes/victoria.png')
         go_img = pygame.image.load('imagenes/go.png')
@@ -109,6 +107,7 @@ class Rio(Entorno):
 
         font = pygame.font.SysFont(None, 25)
         font_dialogo = pygame.font.SysFont(None, 24)
+        font_boton = pygame.font.SysFont(None, 22, bold=True)
 
         x = (ancho * 0.1)
         y = (altura * 0.8)
@@ -139,6 +138,7 @@ class Rio(Entorno):
         pafi, verdug, bt = 3, 3, 1  # Indica 3 verdugos, 3 pacificos en orilla izquierda
         # Representacion del estado
         estado = [pafi, verdug, bt]  # indica estado en orilla izquierda (numero de pacificos y verdugos)
+        estado_inicial_partida = list(estado)
 
         fin_juego = False
         fin_jugador, victoria_jugador = False, False
@@ -158,6 +158,7 @@ class Rio(Entorno):
         asistencia_camino = []
         dialogo_asistencia = None
         voz_pendiente = None
+        algoritmo_seleccionado = "bfs"
 
         while not finalizado:
             agente_solicitado = False
@@ -166,8 +167,16 @@ class Rio(Entorno):
             ventana.blit(fondo_img, (0, 0))
             # boton para iniciar nuevo juego
             ventana.blit(nuevo_img, (1000, 45))
-            # boton para habilitar sonido
-            ventana.blit(agente_btn_img, (700, 45))
+            # botones para seleccionar el algoritmo activo
+            for texto_boton, rect_boton, algoritmo_boton in (
+                ("AGENTE BFS", pygame.Rect(700, 45, 119, 36), "bfs"),
+                ("AGENTE DFS", pygame.Rect(830, 45, 119, 36), "dfs"),
+            ):
+                color_boton = (170, 220, 170) if algoritmo_seleccionado == algoritmo_boton else (200, 200, 200)
+                pygame.draw.rect(ventana, color_boton, rect_boton)
+                pygame.draw.rect(ventana, negro, rect_boton, 2)
+                etiqueta = font_boton.render(texto_boton, True, negro)
+                ventana.blit(etiqueta, etiqueta.get_rect(center=rect_boton.center))
             # boton para habilitar sonido
             if sonido:
                 ventana.blit(sonido_on_img, (1150, 40))
@@ -180,7 +189,13 @@ class Rio(Entorno):
                     finalizado = True
                 elif evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
                     if pygame.Rect(700, 45, 119, 36).collidepoint(evento.pos):
-                        agente_solicitado = True
+                        if not asistencia_activa:
+                            algoritmo_seleccionado = "bfs"
+                            agente_solicitado = True
+                    elif pygame.Rect(830, 45, 119, 36).collidepoint(evento.pos):
+                        if not asistencia_activa:
+                            algoritmo_seleccionado = "dfs"
+                            agente_solicitado = True
 
             # cargar imagenes para los personajes (el vector de personajes)
             for i in range(6):
@@ -236,13 +251,15 @@ class Rio(Entorno):
 
             # click para pedir recomendacion al agente
             # verificamos si el cursor esta en el area del boton agente
-            if 700 + 119 > cursor[0] > 700 and 45 + 36 > cursor[1] > 45:
-                ventana.blit(agente_btn1_img, (700, 20))
+            if (700 + 119 > cursor[0] > 700 and 45 + 36 > cursor[1] > 45) or \
+                    (830 + 119 > cursor[0] > 830 and 45 + 36 > cursor[1] > 45):
                 # si se hace click en el boton nuevo
                 if agente_solicitado:
                     if not asistencia_activa:
                         agente.reiniciar_rendimiento_partida()
-                        asistencia_pasos = agente.obtener_pasos_asistencia(estado)
+                        asistencia_pasos = agente.obtener_pasos_asistencia(
+                            estado, algoritmo=algoritmo_seleccionado
+                        )
                         asistencia_estado = list(estado)
                         asistencia_indice = 0
                         asistencia_camino = [list(nodo) for nodo in agente._camino_actual]
@@ -447,6 +464,13 @@ class Rio(Entorno):
                     mensajes_finales = agente.obtener_mensaje_rendimiento_global()
                     for mensaje in mensajes_finales:
                         print(mensaje)
+                    agente.set_estado_inicial(estado_inicial_partida)
+                    agente.set_estado_meta([0, 0, 0])
+                    reporte_comparativo = agente.generar_reporte_metricas(
+                        algoritmo_activo=agente.algoritmo_actual
+                    )
+                    print("Comparacion BFS vs DFS:")
+                    print(reporte_comparativo)
                     if self.hilo_voz and self.hilo_voz.is_alive():
                         voz_pendiente = mensajes_finales
                     else:
@@ -465,7 +489,9 @@ class Rio(Entorno):
                         else:
                             self.hablar_instrucciones([dialogo_asistencia])
                 else:
-                    asistencia_pasos = agente.obtener_pasos_asistencia(estado)
+                    asistencia_pasos = agente.obtener_pasos_asistencia(
+                        estado, algoritmo=algoritmo_seleccionado
+                    )
                     asistencia_indice = 0
                     asistencia_camino = [list(nodo) for nodo in agente._camino_actual]
                     dialogo_asistencia = asistencia_pasos[0] if asistencia_pasos else None
